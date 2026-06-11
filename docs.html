@@ -75,7 +75,7 @@
     <div class="bg-brand-card border border-brand-border rounded-2xl p-6 sm:p-8 animate-fade-in delay-300">
       <div class="flex items-start gap-4">
         <div class="w-10 h-10 rounded-xl bg-brand-accent flex items-center justify-center shrink-0 text-slate-900 font-bold text-lg">1</div>
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <h2 class="text-xl font-semibold mb-1">Fork 项目仓库</h2>
           <p class="text-brand-muted text-sm mb-4">点击 GitHub 仓库右上角 Fork 按钮，将项目复制到你的账号下。</p>
           <div class="bg-[#0B1120] rounded-xl p-4 font-mono text-sm overflow-x-auto code-block relative group">
@@ -92,7 +92,7 @@
     <div class="bg-brand-card border border-brand-border rounded-2xl p-6 sm:p-8">
       <div class="flex items-start gap-4">
         <div class="w-10 h-10 rounded-xl bg-brand-accent flex items-center justify-center shrink-0 text-slate-900 font-bold text-lg">2</div>
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <h2 class="text-xl font-semibold mb-1">连接到 Cloudflare Pages</h2>
           <p class="text-brand-muted text-sm mb-4">登录 Cloudflare Dashboard，进入 <strong class="text-brand-text">Workers &amp; Pages</strong> → 创建应用程序 → Pages → 连接到 Git。</p>
           <ul class="space-y-2 text-sm text-brand-muted list-disc list-inside">
@@ -120,7 +120,7 @@ Root directory:    <span class="text-brand-muted">(leave empty)</span></code>
     <div class="bg-brand-card border border-brand-border rounded-2xl p-6 sm:p-8">
       <div class="flex items-start gap-4">
         <div class="w-10 h-10 rounded-xl bg-brand-accent flex items-center justify-center shrink-0 text-slate-900 font-bold text-lg">3</div>
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <h2 class="text-xl font-semibold mb-1">_worker.js 代理逻辑</h2>
           <p class="text-brand-muted text-sm mb-4">项目根目录的 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">_worker.js</code> 会在部署时自动被 Cloudflare Pages 识别为 Worker。它负责：</p>
           <ul class="space-y-2 text-sm text-brand-muted list-disc list-inside mb-4">
@@ -165,7 +165,7 @@ Root directory:    <span class="text-brand-muted">(leave empty)</span></code>
     <div class="bg-brand-card border border-brand-border rounded-2xl p-6 sm:p-8">
       <div class="flex items-start gap-4">
         <div class="w-10 h-10 rounded-xl bg-brand-accent flex items-center justify-center shrink-0 text-slate-900 font-bold text-lg">4</div>
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <h2 class="text-xl font-semibold mb-1">绑定自定义域名（可选）</h2>
           <p class="text-brand-muted text-sm mb-4">进入 Pages 项目 → 自定义域 → 添加你的域名。配置 DNS CNAME 记录指向 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">your-project.pages.dev</code>。</p>
           <div class="bg-[#0B1120] rounded-xl p-3 font-mono text-sm overflow-x-auto code-block relative group">
@@ -184,7 +184,7 @@ Root directory:    <span class="text-brand-muted">(leave empty)</span></code>
     <div class="bg-brand-card border border-brand-border rounded-2xl p-6 sm:p-8">
       <div class="flex items-start gap-4">
         <div class="w-10 h-10 rounded-xl bg-brand-accent flex items-center justify-center shrink-0 text-slate-900 font-bold text-lg">5</div>
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <h2 class="text-xl font-semibold mb-1">更新占位域名</h2>
           <p class="text-brand-muted text-sm mb-4">将项目所有文件中的 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">your-domain.com</code> 替换为你的实际域名。</p>
           <div class="bg-[#0B1120] rounded-xl p-4 font-mono text-sm overflow-x-auto code-block relative group">
