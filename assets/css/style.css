@@ -57,7 +57,7 @@
 
 /* --- Scrollbar --- */
 html {
-  scrollbar-color: #334155 #0F172A;
+  scrollbar-color: #334155 #1E293B;
   scrollbar-width: thin;
 }
 ::-webkit-scrollbar {
@@ -65,7 +65,7 @@ html {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0F172A;
+  background: #1E293B;
 }
 ::-webkit-scrollbar-thumb {
   background: #334155;
@@ -78,7 +78,8 @@ html {
 /* --- Code blocks --- */
 .code-block code {
   white-space: pre;
-  display: block;
+  display: inline-block;
+  min-width: 100%;
 }
 
 /* --- Respect user motion preference --- */
