@@ -78,7 +78,8 @@ html {
 /* --- Code blocks --- */
 .code-block code {
   white-space: pre;
-  display: inline-block;
+  display: block;
+  width: max-content;
   min-width: 100%;
 }
 
