@@ -2,126 +2,285 @@
  * Cloudflare Worker — 通用代理 + Docker Registry Mirror
  *
  * 路由规则：
- *   OPTIONS *                → 返回 CORS 预检响应
- *   /v2/...                  → Docker Registry API → registry-1.docker.io
- *   /https://...  /http://... → 通用 URL 代理（支持 git clone）
- *   其他路径                   → Cloudflare Pages 静态资源
+ *   OPTIONS *                  → CORS 预检
+ *   /v2/...                    → Docker Registry → registry-1.docker.io
+ *   /https://... /http://...   → 通用 URL 代理（git clone / wget）
+ *   /<image> 或 /<user>/<img>  → Docker pull（docker pull 本域名时）
+ *   其他路径                     → Pages 静态资源
  */
+
+// ============================================================
+// 配置
+// ============================================================
 
 const DOCKER_UPSTREAM = 'https://registry-1.docker.io';
 
-// Cloudflare 注入的 header，不应转发到上游
-const STRIP_HEADERS = [
-  'cf-connecting-ip',
-  'cf-ipcountry',
-  'cf-ray',
-  'cf-visitor',
-  'cf-ew-via',
-  'x-forwarded-proto',
-  'x-real-ip',
-  'cdn-loop',
+const ALLOWED_HOSTS = [
+  'github.com', 'api.github.com', 'raw.githubusercontent.com',
+  'gist.github.com', 'gist.githubusercontent.com',
+  'quay.io', 'gcr.io', 'k8s.gcr.io', 'registry.k8s.io',
+  'ghcr.io', 'docker.cloudsmith.io', 'registry-1.docker.io',
 ];
 
-// 这些 header 可能非常大或造成问题，需要从响应中删除
-const STRIP_RESPONSE_HEADERS = [
-  'content-security-policy',
-  'content-security-policy-report-only',
-  'x-content-security-policy',
-  'x-webkit-csp',
-];
+const DOCKER_REGISTRIES = new Set([
+  'quay.io', 'gcr.io', 'k8s.gcr.io', 'registry.k8s.io',
+  'ghcr.io', 'docker.cloudsmith.io', 'registry-1.docker.io',
+]);
 
-/**
- * 将客户端请求代理到目标 URL。
- */
-async function proxyFetch(targetUrl, request) {
-  const { method } = request;
+const STRIP_REQ_HEADERS = new Set([
+  'cf-connecting-ip', 'cf-ipcountry', 'cf-ray', 'cf-visitor',
+  'cf-ew-via', 'x-forwarded-proto', 'x-real-ip', 'cdn-loop',
+]);
 
-  // 构建转发 header —— 逐项拷贝，避开 Cloudflare 私有 header
-  const reqHeaders = new Headers();
+const STRIP_RES_HEADERS = new Set([
+  'content-security-policy', 'content-security-policy-report-only',
+  'x-content-security-policy', 'x-webkit-csp',
+]);
+
+// 空 body 的 SHA-256，S3 需要
+const EMPTY_BODY_SHA256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+const MAX_REDIRECTS = 5;
+
+// ============================================================
+// 工具函数
+// ============================================================
+
+function isAmazonS3(url) {
+  try { return new URL(url).hostname.includes('amazonaws.com'); } catch { return false; }
+}
+
+function getAmzDate() {
+  return new Date().toISOString().replace(/[-:T]/g, '').slice(0, -5) + 'Z';
+}
+
+/** 构建代理请求头：去掉 CF 私有头，替换 Host，S3 自动补 amz 头 */
+function buildReqHeaders(request, targetUrl) {
+  const targetHost = new URL(targetUrl).host;
+  const h = new Headers();
+
   for (const [k, v] of request.headers) {
-    const lower = k.toLowerCase();
-    if (STRIP_HEADERS.includes(lower)) continue;
-    // 将 Host 替换为目标域名
-    if (lower === 'host') {
-      try { reqHeaders.set('host', new URL(targetUrl).host); } catch (_) {}
-      continue;
-    }
-    reqHeaders.set(k, v);
+    if (STRIP_REQ_HEADERS.has(k.toLowerCase())) continue;
+    if (k.toLowerCase() === 'host') { h.set('host', targetHost); continue; }
+    h.set(k, v);
   }
-  // 确保 Host 存在（客户端不发送 Host 时的兜底）
-  if (!reqHeaders.has('host')) {
-    try { reqHeaders.set('host', new URL(targetUrl).host); } catch (_) {}
+  if (!h.has('host')) h.set('host', targetHost);
+
+  // S3 需要这四个头，客户端可能不带
+  if (isAmazonS3(targetUrl)) {
+    h.set('x-amz-content-sha256', EMPTY_BODY_SHA256);
+    h.set('x-amz-date', getAmzDate());
+  } else {
+    // 非 S3 去掉可能干扰的残留 amz 头
+    h.delete('x-amz-content-sha256');
+    h.delete('x-amz-date');
+    h.delete('x-amz-security-token');
+    h.delete('x-amz-user-agent');
   }
+  return h;
+}
+
+/** CORS 预检 */
+function corsPreflight() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, HEAD',
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
+}
+
+/** 包装上游响应：加 CORS + 去敏感头 */
+function wrapResponse(upstream) {
+  const h = new Headers(upstream.headers);
+  for (const name of STRIP_RES_HEADERS) h.delete(name);
+  h.set('Access-Control-Allow-Origin', '*');
+  h.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
+  h.set('Access-Control-Allow-Headers', '*');
+  h.set('Access-Control-Expose-Headers', '*');
+  return new Response(upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers: h,
+  });
+}
+
+// ============================================================
+// Docker Auth Token
+// ============================================================
+
+/** 解析 WWW-Authenticate 并拿 token */
+async function fetchDockerToken(wwwAuth) {
+  const m = wwwAuth.match(/Bearer realm="([^"]+?)",service="([^"]*?)",scope="([^"]*?)"/);
+  if (!m) return null;
+
+  const [, realm, service, scope] = m;
+  const tokenUrl = `${realm}?service=${service}&scope=${encodeURIComponent(scope)}`;
 
   try {
-    // 对于 GET / HEAD，不携带 body（fetch 规范允许 body 为 null）
-    const fetchInit = {
-      method,
-      headers: reqHeaders,
-      redirect: 'follow',
-    };
-    if (method !== 'GET' && method !== 'HEAD') {
-      fetchInit.body = request.body;
-    }
-
-    const upstream = await fetch(targetUrl, fetchInit);
-
-    // 构建响应 header，注入 CORS 并删除敏感 header
-    const respHeaders = new Headers(upstream.headers);
-    for (const h of STRIP_RESPONSE_HEADERS) respHeaders.delete(h);
-    respHeaders.set('Access-Control-Allow-Origin', '*');
-    respHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
-    respHeaders.set('Access-Control-Allow-Headers', '*');
-    respHeaders.set('Access-Control-Expose-Headers', '*');
-
-    return new Response(upstream.body, {
-      status: upstream.status,
-      statusText: upstream.statusText,
-      headers: respHeaders,
-    });
-  } catch (err) {
-    return new Response('Proxy Error: ' + err.message, {
-      status: 502,
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
+    const res = await fetch(tokenUrl, { headers: { Accept: 'application/json' } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.token || data.access_token || null;
+  } catch {
+    return null;
   }
 }
+
+// ============================================================
+// 核心代理（带 token 重试 + S3 重定向反代）
+// ============================================================
+
+async function proxyWithAuth(targetUrl, request, isDocker, redirectCount = 0) {
+  if (redirectCount > MAX_REDIRECTS) {
+    return new Response('Too many redirects', { status: 508 });
+  }
+
+  const headers = buildReqHeaders(request, targetUrl);
+
+  const upstream = await fetch(targetUrl, {
+    method: request.method,
+    headers,
+    body: request.body,
+    redirect: 'manual', // 关键：手动处理重定向
+  });
+
+  // ===== Docker 401 → 拿 token 重试 =====
+  if (isDocker && upstream.status === 401) {
+    const wwwAuth = upstream.headers.get('WWW-Authenticate');
+    if (wwwAuth) {
+      const token = await fetchDockerToken(wwwAuth);
+      if (token) {
+        const authHeaders = buildReqHeaders(request, targetUrl);
+        authHeaders.set('Authorization', `Bearer ${token}`);
+        const retry = await fetch(targetUrl, {
+          method: request.method,
+          headers: authHeaders,
+          body: request.body,
+          redirect: 'manual',
+        });
+        return retry;
+      }
+    }
+    // token 拿不到就原样返回 401
+    return wrapResponse(upstream);
+  }
+
+  // ===== S3 / CDN 重定向 → 重新代理 =====
+  if (upstream.status === 302 || upstream.status === 307) {
+    const location = upstream.headers.get('Location');
+    if (location) {
+      const redirHeaders = buildReqHeaders(request, location);
+      // 带回上游给的 Authorization（如果有的话）
+      const upstreamAuth = upstream.headers.get('Authorization');
+      if (upstreamAuth) redirHeaders.set('Authorization', upstreamAuth);
+
+      const redirResp = await fetch(location, {
+        method: request.method,
+        headers: redirHeaders,
+        body: request.body,
+        redirect: 'manual',
+      });
+
+      // 如果还是重定向，递归
+      if (redirResp.status === 302 || redirResp.status === 307) {
+        const nextLocation = redirResp.headers.get('Location');
+        if (nextLocation) {
+          return proxyWithAuth(nextLocation, request, isDocker, redirectCount + 1);
+        }
+      }
+      return wrapResponse(redirResp);
+    }
+  }
+
+  return wrapResponse(upstream);
+}
+
+// ============================================================
+// Docker 路径解析
+// ============================================================
+
+/**
+ * 将各种 Docker pull 路径统一为 upstream URL。
+ * 支持格式：
+ *   nginx                  → registry-1.docker.io/v2/library/nginx/...
+ *   library/nginx          → registry-1.docker.io/v2/library/nginx/...
+ *   user/image             → registry-1.docker.io/v2/user/image/...
+ *   ghcr.io/user/image     → ghcr.io/v2/user/image/...
+ *   /v2/...                → registry-1.docker.io/v2/...（registry mirror 场景）
+ */
+function parseDockerPath(pathname, search) {
+  // registry-mirror 模式：docker pull 时发到 /v2/...
+  if (pathname.startsWith('/v2/')) {
+    return {
+      targetUrl: DOCKER_UPSTREAM + pathname + (search || ''),
+      isDocker: true,
+    };
+  }
+
+  const parts = pathname.split('/').filter(Boolean);
+  if (parts.length === 0) return null;
+
+  // 检查第一个 part 是否是已知 registry（如 ghcr.io）
+  if (DOCKER_REGISTRIES.has(parts[0])) {
+    const host = parts[0];
+    const imagePath = parts.slice(1).join('/');
+    return {
+      targetUrl: `https://${host}/v2/${imagePath}`,
+      isDocker: true,
+    };
+  }
+
+  // 单段 → library/xxx
+  if (parts.length === 1) {
+    return {
+      targetUrl: `${DOCKER_UPSTREAM}/v2/library/${parts[0]}`,
+      isDocker: true,
+    };
+  }
+
+  // 多段 → 可能是 user/image 或 library/xxx
+  return {
+    targetUrl: `${DOCKER_UPSTREAM}/v2/${parts.join('/')}`,
+    isDocker: true,
+  };
+}
+
+// ============================================================
+// 主入口
+// ============================================================
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const { pathname, search } = url;
 
-    // —— CORS 预检 ——
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, HEAD',
-          'Access-Control-Allow-Headers': '*',
-          'Access-Control-Max-Age': '86400',
-        },
-      });
+    if (request.method === 'OPTIONS') return corsPreflight();
+
+    // —— Docker 路径 ——
+    const docker = parseDockerPath(pathname, search);
+    if (docker) {
+      return proxyWithAuth(docker.targetUrl, request, docker.isDocker);
     }
 
-    // —— Docker Registry API 代理 ——
-    if (pathname.startsWith('/v2/')) {
-      const targetUrl = DOCKER_UPSTREAM + pathname + (search || '');
-      return proxyFetch(targetUrl, request);
-    }
-
-    // —— 通用 URL 代理 ——
-    // 匹配 /https://github.com/... 或 /http://example.com/...
+    // —— 通用 URL 代理 (/https://github.com/...) ——
     if (/^\/https?:\/\//.test(pathname)) {
       const targetUrl = pathname.slice(1) + (search || '');
-      return proxyFetch(targetUrl, request);
+      // 目标域名不在白名单里就拒绝
+      try {
+        const targetHost = new URL(targetUrl).hostname;
+        if (!ALLOWED_HOSTS.includes(targetHost)) {
+          return new Response(`Error: domain "${targetHost}" not allowed.\n`, { status: 400 });
+        }
+      } catch {
+        return new Response('Error: invalid target URL.\n', { status: 400 });
+      }
+      return proxyWithAuth(targetUrl, request, false);
     }
 
-    // —— 静态资源：交给 Cloudflare Pages 处理 ——
+    // —— 静态资源 ——
     try {
       return env.ASSETS.fetch(request);
     } catch (_) {
