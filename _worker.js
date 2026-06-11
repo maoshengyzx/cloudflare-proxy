@@ -203,16 +203,12 @@ async function proxyWithAuth(targetUrl, request, isDocker, redirectCount = 0) {
 // ============================================================
 
 /**
- * 将各种 Docker pull 路径统一为 upstream URL。
- * 支持格式：
- *   nginx                  → registry-1.docker.io/v2/library/nginx/...
- *   library/nginx          → registry-1.docker.io/v2/library/nginx/...
- *   user/image             → registry-1.docker.io/v2/user/image/...
- *   ghcr.io/user/image     → ghcr.io/v2/user/image/...
- *   /v2/...                → registry-1.docker.io/v2/...（registry mirror 场景）
+ * 仅识别两种 Docker 路径（Docker daemon 实际发出的请求格式）：
+ *   /v2/library/nginx/...         → Docker Hub registry mirror
+ *   /ghcr.io/user/image/...       → 第三方 registry
+ * 不做"单段 = library/xxx"的猜测，避免把 /gh、/docs 等静态页面路径误判为镜像名。
  */
 function parseDockerPath(pathname, search) {
-  // registry-mirror 模式：docker pull 时发到 /v2/...
   if (pathname.startsWith('/v2/')) {
     return {
       targetUrl: DOCKER_UPSTREAM + pathname + (search || ''),
@@ -223,7 +219,6 @@ function parseDockerPath(pathname, search) {
   const parts = pathname.split('/').filter(Boolean);
   if (parts.length === 0) return null;
 
-  // 检查第一个 part 是否是已知 registry（如 ghcr.io）
   if (DOCKER_REGISTRIES.has(parts[0])) {
     const host = parts[0];
     const imagePath = parts.slice(1).join('/');
@@ -233,19 +228,7 @@ function parseDockerPath(pathname, search) {
     };
   }
 
-  // 单段 → library/xxx
-  if (parts.length === 1) {
-    return {
-      targetUrl: `${DOCKER_UPSTREAM}/v2/library/${parts[0]}`,
-      isDocker: true,
-    };
-  }
-
-  // 多段 → 可能是 user/image 或 library/xxx
-  return {
-    targetUrl: `${DOCKER_UPSTREAM}/v2/${parts.join('/')}`,
-    isDocker: true,
-  };
+  return null;
 }
 
 // ============================================================
@@ -282,7 +265,15 @@ export default {
 
     // —— 静态资源 ——
     try {
-      return env.ASSETS.fetch(request);
+      const assetsResp = await env.ASSETS.fetch(request);
+      // 如果路径不含扩展名，且 ASSETS 返回了 404，尝试追加 .html
+      if (assetsResp.status === 404 && !pathname.includes('.')) {
+        const htmlUrl = new URL(request.url);
+        htmlUrl.pathname = pathname + '.html';
+        const htmlResp = await env.ASSETS.fetch(new Request(htmlUrl, request));
+        if (htmlResp.status !== 404) return htmlResp;
+      }
+      return assetsResp;
     } catch (_) {
       return new Response('Not Found', { status: 404 });
     }
