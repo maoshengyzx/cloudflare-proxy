@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloudflare Proxy — 全球加速 · 一键部署</title>
+<meta name="description" content="基于 Cloudflare Pages 的 GitHub、Docker Hub 加速代理服务。免费、高速、无需注册。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        },
+        colors: {
+          brand: {
+            bg: '#0F172A',
+            card: '#1E293B',
+            hover: '#334155',
+            border: '#334155',
+            text: '#F8FAFC',
+            muted: '#94A3B8',
+            accent: '#22C55E',
+            'accent-hover': '#16A34A',
+          }
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-brand-bg text-brand-text font-sans antialiased">
+
+<!-- Navbar -->
+<nav class="fixed top-4 left-4 right-4 z-50 max-w-6xl mx-auto bg-brand-card/80 backdrop-blur-xl border border-brand-border rounded-2xl px-6 py-3 flex items-center justify-between shadow-lg shadow-black/20">
+  <a href="/" class="flex items-center gap-2.5 font-semibold text-lg tracking-tight">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" class="shrink-0">
+      <rect width="28" height="28" rx="7" fill="#22C55E"/>
+      <path d="M8 14h4l2-6 4 12 2-6h4" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="hidden sm:inline">Cloudflare Proxy</span>
+  </a>
+  <div class="flex items-center gap-1 text-sm font-medium">
+    <a href="/" class="px-3.5 py-2 rounded-lg bg-brand-accent/15 text-brand-accent transition-colors duration-200">首页</a>
+    <a href="/gh.html" class="px-3.5 py-2 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-hover/50 transition-colors duration-200">GitHub 加速</a>
+    <a href="/docker.html" class="px-3.5 py-2 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-hover/50 transition-colors duration-200">Docker 加速</a>
+    <a href="/docs.html" class="px-3.5 py-2 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-hover/50 transition-colors duration-200">文档</a>
+    <a href="https://github.com" target="_blank" rel="noopener" class="ml-2 p-2 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-hover/50 transition-colors duration-200 cursor-pointer" aria-label="GitHub">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+  <div class="hero-glow absolute inset-0 pointer-events-none"></div>
+  <div class="absolute top-20 -left-32 w-96 h-96 bg-brand-accent/5 rounded-full blur-3xl"></div>
+  <div class="absolute top-40 -right-32 w-96 h-96 bg-brand-accent/5 rounded-full blur-3xl"></div>
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-sm font-medium mb-8 animate-fade-in">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      Cloudflare Pages 驱动 · 免费使用
+    </div>
+
+    <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight animate-fade-in delay-100">
+      全球加速
+      <span class="bg-gradient-to-r from-brand-accent to-emerald-300 bg-clip-text text-transparent gradient-animate"> 一键部署</span>
+    </h1>
+
+    <p class="mt-6 text-lg md:text-xl text-brand-muted max-w-2xl mx-auto animate-fade-in delay-200">
+      GitHub Release 下载加速、Docker Hub 镜像代理、NPM 包加速 —— 基于 Cloudflare Pages，免费、高速、零门槛。
+    </p>
+
+    <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in delay-300">
+      <div class="flex items-center w-full max-w-md bg-brand-card border border-brand-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-accent/50 transition-shadow duration-200">
+        <input type="text" placeholder="粘贴 GitHub 仓库地址或 Docker 镜像名..." class="flex-1 bg-transparent px-4 py-3.5 text-sm font-mono text-brand-text placeholder:text-brand-muted/60 outline-none">
+        <button class="px-5 py-3.5 bg-brand-accent hover:bg-brand-accent-hover text-slate-900 font-semibold text-sm transition-colors duration-200 cursor-pointer whitespace-nowrap">
+          开始加速
+        </button>
+      </div>
+    </div>
+
+    <!-- Terminal Demo -->
+    <div class="mt-12 max-w-2xl mx-auto bg-[#0B1120] border border-brand-border rounded-xl overflow-hidden shadow-2xl shadow-black/40 animate-fade-in delay-400">
+      <div class="flex items-center gap-2 px-4 py-3 bg-brand-card/50 border-b border-brand-border">
+        <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+        <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+        <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+        <span class="ml-3 text-xs text-brand-muted font-mono">Terminal</span>
+      </div>
+      <div class="p-4 sm:p-5 font-mono text-sm leading-relaxed text-left overflow-x-auto">
+        <div class="terminal-line text-brand-muted"><span class="text-brand-accent">$</span> git clone <span class="text-sky-400">https://your-domain.com/https://github.com/user/repo.git</span></div>
+        <div class="terminal-line text-brand-muted/80">Cloning into 'repo'...</div>
+        <div class="terminal-line text-brand-accent/80">remote: Enumerating objects: 142, done.</div>
+        <div class="terminal-line text-brand-accent/80">remote: Counting objects: 100% (142/142), done.</div>
+        <div class="terminal-line text-brand-text">Resolving deltas: 100% (64/64), done. <span class="text-brand-accent font-semibold">3.2s</span></div>
+        <div class="mt-3 text-brand-text cursor-blink"><span class="text-brand-accent">$</span> </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="py-20 md:py-28 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">三大核心加速</h2>
+      <p class="mt-4 text-brand-muted text-lg max-w-xl mx-auto">覆盖开发者最常用的三个平台，一个 Worker 全部搞定。</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- Feature 1: GitHub -->
+      <div class="group bg-brand-card border border-brand-border rounded-2xl p-8 hover:border-brand-accent/40 hover:bg-brand-hover/50 transition-all duration-300 cursor-pointer">
+        <div class="w-12 h-12 rounded-xl bg-brand-accent/10 flex items-center justify-center mb-5 group-hover:bg-brand-accent/20 transition-colors duration-300">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-3">GitHub 加速</h3>
+        <p class="text-brand-muted leading-relaxed mb-4">加速 Release 下载、Git Clone、Raw 文件访问。支持 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-sm font-mono text-brand-accent">git clone</code> 代理。</p>
+        <ul class="space-y-2 text-sm text-brand-muted">
+          <li class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Release 下载 10x 加速</li>
+          <li class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Git Clone 无缝代理</li>
+          <li class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Raw / Archive 直连</li>
+        </ul>
+      </div>
+
+      <!-- Feature 2: Docker -->
+      <div class="group bg-brand-card border border-brand-border rounded-2xl p-8 hover:border-brand-accent/40 hover:bg-brand-hover/50 transition-all duration-300 cursor-pointer">
+        <div class="w-12 h-12 rounded-xl bg-brand-accent/10 flex items-center justify-center mb-5 group-hover:bg-brand-accent/20 transition-colors duration-300">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-3">Docker 镜像加速</h3>
+        <p class="text-brand-muted leading-relaxed mb-4">代理 Docker Hub 镜像拉取。支持 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-sm font-mono text-brand-accent">docker pull</code> 一键配置。</p>
+        <ul class="space-y-2 text-sm text-brand-muted">
+          <li class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Docker Hub 全量代理</li>
+          <li class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>一键配置 daemon.json</li>
+          <li class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>支持 GHCR / Quay.io</li>
+        </ul>
+      </div>
+
+      <!-- Feature 3: More -->
+      <div class="group bg-brand-card border border-brand-border rounded-2xl p-8 hover:border-brand-accent/40 hover:bg-brand-hover/50 transition-all duration-300 cursor-pointer">
+        <div class="w-12 h-12 rounded-xl bg-brand-accent/10 flex items-center justify-center mb-5 group-hover:bg-brand-accent/20 transition-colors duration-300">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2.24 2.24 0 0 0-2.24 2.24v.22a2.24 2.24 0 0 1-2.24 2.24h-.44a2.24 2.24 0 0 0-2.24 2.24v.44a2.24 2.24 0 0 1-2.24 2.24H2"/><path d="M22 11.78v-.44a2.24 2.24 0 0 0-2.24-2.24h-.22a2.24 2.24 0 0 1-2.24-2.24v-.44a2.24 2.24 0 0 0-2.24-2.24h-.44"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-3">更多加速</h3>
+        <p class="text-brand-muted leading-relaxed mb-4">NPM、PyPI、Crates.io 等包管理器的代理加速。一个域名覆盖全场景。</p>
+        <ul class="space-y-2 text-sm text-brand-muted">
+          <li class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>NPM Registry 代理</li>
+          <li class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>PyPI 镜像加速</li>
+          <li class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>完全免费 · 开源可审计</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How to Use -->
+<section class="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-brand-card/30">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">快速上手</h2>
+      <p class="mt-4 text-brand-muted text-lg">三种使用方式，选择最适合你的</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-brand-card border border-brand-border rounded-2xl overflow-hidden tab-group">
+      <div class="flex border-b border-brand-border overflow-x-auto" role="tablist">
+        <button class="px-6 py-3.5 text-sm font-medium border-b-2 border-brand-accent text-brand-accent whitespace-nowrap transition-colors duration-200 cursor-pointer" data-tab="tab-github" role="tab" aria-selected="true">GitHub 加速</button>
+        <button class="px-6 py-3.5 text-sm font-medium border-b-2 border-transparent text-brand-muted hover:text-brand-text whitespace-nowrap transition-colors duration-200 cursor-pointer" data-tab="tab-docker" role="tab" aria-selected="false">Docker 加速</button>
+        <button class="px-6 py-3.5 text-sm font-medium border-b-2 border-transparent text-brand-muted hover:text-brand-text whitespace-nowrap transition-colors duration-200 cursor-pointer" data-tab="tab-npm" role="tab" aria-selected="false">NPM 加速</button>
+      </div>
+
+      <!-- Tab: GitHub -->
+      <div class="tab-panel p-6 sm:p-8" id="tab-github" role="tabpanel">
+        <p class="text-brand-muted mb-5 text-sm">将 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">github.com</code> 替换为你的代理域名即可：</p>
+        <div class="bg-[#0B1120] rounded-xl p-5 font-mono text-sm overflow-x-auto code-block relative group">
+          <button class="absolute top-3 right-3 p-1.5 rounded-lg bg-brand-hover/80 hover:bg-brand-hover text-brand-muted hover:text-brand-text transition-colors duration-200 cursor-pointer opacity-0 group-hover:opacity-100 copy-btn" title="复制">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <code class="text-brand-muted"><span class="text-brand-accent"># Clone 仓库</span>
+git clone <span class="text-sky-400">https://your-domain.com</span>/<span class="text-yellow-400">https://github.com/user/repo.git</span>
+
+<span class="text-brand-accent"># 下载 Release</span>
+wget <span class="text-sky-400">https://your-domain.com</span>/<span class="text-yellow-400">https://github.com/user/repo/releases/download/v1.0/file.tar.gz</span></code>
+        </div>
+      </div>
+
+      <!-- Tab: Docker -->
+      <div class="tab-panel p-6 sm:p-8 hidden" id="tab-docker" role="tabpanel">
+        <p class="text-brand-muted mb-5 text-sm">修改 Docker daemon 配置，添加 registry mirror：</p>
+        <div class="bg-[#0B1120] rounded-xl p-5 font-mono text-sm overflow-x-auto code-block relative group">
+          <button class="absolute top-3 right-3 p-1.5 rounded-lg bg-brand-hover/80 hover:bg-brand-hover text-brand-muted hover:text-brand-text transition-colors duration-200 cursor-pointer opacity-0 group-hover:opacity-100 copy-btn" title="复制">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <code><span class="text-brand-muted">// /etc/docker/daemon.json</span>
+{
+  <span class="text-brand-accent">"registry-mirrors"</span>: [
+    <span class="text-yellow-400">"https://your-domain.com"</span>
+  ]
+}</code>
+        </div>
+        <p class="text-brand-muted mt-4 text-sm">然后执行 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">systemctl restart docker</code> 生效。</p>
+      </div>
+
+      <!-- Tab: NPM -->
+      <div class="tab-panel p-6 sm:p-8 hidden" id="tab-npm" role="tabpanel">
+        <p class="text-brand-muted mb-5 text-sm">设置 NPM registry 代理地址：</p>
+        <div class="bg-[#0B1120] rounded-xl p-5 font-mono text-sm overflow-x-auto code-block relative group">
+          <button class="absolute top-3 right-3 p-1.5 rounded-lg bg-brand-hover/80 hover:bg-brand-hover text-brand-muted hover:text-brand-text transition-colors duration-200 cursor-pointer opacity-0 group-hover:opacity-100 copy-btn" title="复制">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <code><span class="text-brand-muted"># 全局设置</span>
+npm config set registry <span class="text-sky-400">https://your-domain.com</span>
+
+<span class="text-brand-muted"># 或使用 .npmrc</span>
+registry=<span class="text-sky-400">https://your-domain.com</span></code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="py-20 md:py-28 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">常见问题</h2>
+      <p class="mt-4 text-brand-muted text-lg">关于 Cloudflare Proxy 的一切</p>
+    </div>
+
+    <div class="space-y-3">
+      <details class="group bg-brand-card border border-brand-border rounded-xl cursor-pointer">
+        <summary class="flex items-center justify-between px-6 py-4 font-medium select-none marker:hidden">
+          如何部署到自己的 Cloudflare Pages？
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-open:rotate-180 transition-transform duration-200"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="px-6 pb-4 text-brand-muted text-sm leading-relaxed border-t border-brand-border pt-4">
+          Fork 本项目仓库，在 Cloudflare Pages Dashboard 中连接 GitHub 仓库，设置构建命令为空（纯静态），部署目录为 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">/</code>，<code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">_worker.js</code> 会自动被 Pages 识别。
+        </div>
+      </details>
+
+      <details class="group bg-brand-card border border-brand-border rounded-xl cursor-pointer">
+        <summary class="flex items-center justify-between px-6 py-4 font-medium select-none marker:hidden">
+          是否需要 Cloudflare Workers 付费？
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-open:rotate-180 transition-transform duration-200"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="px-6 pb-4 text-brand-muted text-sm leading-relaxed border-t border-brand-border pt-4">
+          完全不需要。Cloudflare Workers 免费计划提供每日 10 万次请求额度，个人使用绰绰有余。Pages 静态托管也完全免费。
+        </div>
+      </details>
+
+      <details class="group bg-brand-card border border-brand-border rounded-xl cursor-pointer">
+        <summary class="flex items-center justify-between px-6 py-4 font-medium select-none marker:hidden">
+          代理速度有多快？
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-open:rotate-180 transition-transform duration-200"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="px-6 pb-4 text-brand-muted text-sm leading-relaxed border-t border-brand-border pt-4">
+          Cloudflare 全球 CDN 节点，延迟通常在 50-200ms。连接到 GitHub 源站速度极快，实际下载速度取决于你的本地带宽和 Cloudflare 节点质量。
+        </div>
+      </details>
+
+      <details class="group bg-brand-card border border-brand-border rounded-xl cursor-pointer">
+        <summary class="flex items-center justify-between px-6 py-4 font-medium select-none marker:hidden">
+          支持哪些平台的加速？
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-open:rotate-180 transition-transform duration-200"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="px-6 pb-4 text-brand-muted text-sm leading-relaxed border-t border-brand-border pt-4">
+          GitHub (Release, Clone, Raw, Archive)、Docker Hub、GHCR、Quay.io、NPM Registry、PyPI、Crates.io。通过 Worker 配置可扩展支持更多上游。
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-20 md:py-28 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-b from-transparent via-brand-accent/5 to-transparent"></div>
+  <div class="max-w-2xl mx-auto text-center relative">
+    <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">准备好加速了吗？</h2>
+    <p class="mt-4 text-brand-muted text-lg">免费、开源、五分钟部署到自己的域名。</p>
+    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="/docs.html" class="inline-flex items-center gap-2 px-8 py-3.5 bg-brand-accent hover:bg-brand-accent-hover text-slate-900 font-semibold rounded-xl transition-colors duration-200 cursor-pointer pulse-accent">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        查看部署文档
+      </a>
+      <a href="https://github.com" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-8 py-3.5 bg-brand-card border border-brand-border hover:border-brand-text/30 text-brand-text font-semibold rounded-xl transition-colors duration-200 cursor-pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        Star on GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-brand-border py-10 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-brand-muted">
+    <div class="flex items-center gap-2">
+      <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="7" fill="#22C55E"/>
+        <path d="M8 14h4l2-6 4 12 2-6h4" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="text-brand-text font-medium">Cloudflare Proxy</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="/gh.html" class="hover:text-brand-text transition-colors duration-200">GitHub 加速</a>
+      <a href="/docker.html" class="hover:text-brand-text transition-colors duration-200">Docker 加速</a>
+      <a href="/docs.html" class="hover:text-brand-text transition-colors duration-200">文档</a>
+    </div>
+    <span>Powered by Cloudflare Pages</span>
+  </div>
+</footer>
+
+<script src="/assets/js/main.js"></script>
+</body>
+</html>
