@@ -55,6 +55,12 @@
   background: radial-gradient(ellipse 600px 400px at 50% 0%, rgba(34, 197, 94, .12), transparent);
 }
 
+/* --- Code blocks --- */
+.code-block code {
+  white-space: pre;
+  display: block;
+}
+
 /* --- Respect user motion preference --- */
 @media (prefers-reduced-motion: reduce) {
   *,
