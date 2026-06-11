@@ -77,9 +77,36 @@ function initCopyButtons() {
   });
 }
 
+/**
+ * Hero "开始加速" button logic (index.html only).
+ */
+function initHeroButton() {
+  var input = document.getElementById('hero-input');
+  var btn = document.getElementById('hero-btn');
+  if (!input || !btn) return;
+
+  btn.addEventListener('click', function () {
+    var val = input.value.trim();
+    if (!val) return;
+
+    var domain = (window.CF_PROXY && window.CF_PROXY.DOMAIN) || location.hostname;
+
+    if (val.includes('github.com') || /^https?:\/\//.test(val)) {
+      window.open('https://' + domain + '/' + val, '_blank');
+    } else {
+      window.location.href = '/docker.html';
+    }
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') btn.click();
+  });
+}
+
 // Auto-init on DOM ready
 document.addEventListener('DOMContentLoaded', function () {
   applyDomain();
   initTabs();
   initCopyButtons();
+  initHeroButton();
 });
