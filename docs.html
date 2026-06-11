@@ -121,42 +121,17 @@ Root directory:    <span class="text-brand-muted">(leave empty)</span></code>
       <div class="flex items-start gap-4">
         <div class="w-10 h-10 rounded-xl bg-brand-accent flex items-center justify-center shrink-0 text-slate-900 font-bold text-lg">3</div>
         <div class="flex-1 min-w-0">
-          <h2 class="text-xl font-semibold mb-1">_worker.js 代理逻辑</h2>
-          <p class="text-brand-muted text-sm mb-4">项目根目录的 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">_worker.js</code> 会在部署时自动被 Cloudflare Pages 识别为 Worker。它负责：</p>
-          <ul class="space-y-2 text-sm text-brand-muted list-disc list-inside mb-4">
-            <li><code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">/https://...</code> 路径 → 代理到目标 URL</li>
-            <li><code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">/v2/...</code> 路径 → 代理到 Docker Hub Registry API</li>
-            <li>其他路径 → 返回 Pages 静态文件</li>
-          </ul>
-          <div class="bg-[#0B1120] rounded-xl p-5 font-mono text-xs sm:text-sm overflow-x-auto code-block relative group">
-            <button class="absolute top-3 right-3 p-1.5 rounded-lg bg-brand-hover/80 hover:bg-brand-hover text-brand-muted hover:text-brand-text transition-colors duration-200 cursor-pointer opacity-0 group-hover:opacity-100 copy-btn" title="复制">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            </button>
-            <code><span class="text-brand-accent">export default</span> {
-  <span class="text-brand-accent">async</span> <span class="text-yellow-400">fetch</span>(request, env, ctx) {
-    <span class="text-brand-accent">const</span> url = <span class="text-brand-accent">new</span> <span class="text-yellow-400">URL</span>(request.url);
-
-    <span class="text-brand-muted">// CORS preflight</span>
-    <span class="text-brand-accent">if</span> (request.method === <span class="text-yellow-400">'OPTIONS'</span>) {
-      <span class="text-brand-accent">return new</span> Response(<span class="text-brand-text">null</span>, { status: <span class="text-brand-text">204</span> });
-    }
-
-    <span class="text-brand-muted">// Docker Registry proxy</span>
-    <span class="text-brand-accent">if</span> (url.pathname.startsWith(<span class="text-yellow-400">'/v2/'</span>)) {
-      <span class="text-brand-accent">return</span> proxyFetch(<span class="text-yellow-400">'https://registry-1.docker.io'</span> + url.pathname, request);
-    }
-
-    <span class="text-brand-muted">// Generic URL proxy</span>
-    <span class="text-brand-accent">if</span> (url.pathname.match(<span class="text-yellow-400">/^\/https?:\/\//</span>)) {
-      <span class="text-brand-accent">const</span> target = url.pathname.slice(<span class="text-brand-text">1</span>) + url.search;
-      <span class="text-brand-accent">return</span> proxyFetch(target, request);
-    }
-
-    <span class="text-brand-muted">// Static assets</span>
-    <span class="text-brand-accent">return</span> env.ASSETS.fetch(request);
-  },
-};</code>
-          </div>
+          <h2 class="text-xl font-semibold mb-1">_worker.js 自动识别</h2>
+          <p class="text-brand-muted text-sm mb-4">项目根目录的 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">_worker.js</code> 会在部署时自动被 Cloudflare Pages 识别为 Worker。它提供以下代理能力：</p>
+          <dl class="text-sm text-brand-muted space-y-2 mb-4">
+            <div class="flex gap-2"><dt class="text-brand-accent font-medium shrink-0">GitHub</dt><dd>Release 下载、Git Clone、Raw 文件、Archive 归档 — 通过 <code class="px-1 py-0.5 bg-brand-hover rounded text-xs font-mono">/https://github.com/...</code> 路径代理</dd></div>
+            <div class="flex gap-2"><dt class="text-brand-accent font-medium shrink-0">Docker Hub</dt><dd>Registry Mirror — 通过 <code class="px-1 py-0.5 bg-brand-hover rounded text-xs font-mono">/v2/...</code> 路径代理到 registry-1.docker.io</dd></div>
+            <div class="flex gap-2"><dt class="text-brand-accent font-medium shrink-0">Docker Auth</dt><dd>自动解析 401 WWW-Authenticate → 获取 Bearer Token → 重试请求</dd></div>
+            <div class="flex gap-2"><dt class="text-brand-accent font-medium shrink-0">S3 反代</dt><dd>拦截 302/307 重定向到 AWS S3 的响应，通过 Worker 重新代理（解决中国大陆访问问题）</dd></div>
+            <div class="flex gap-2"><dt class="text-brand-accent font-medium shrink-0">多 Registry</dt><dd>支持 GHCR、Quay.io、GCR、K8s Registry 等第三方容器镜像仓库</dd></div>
+            <div class="flex gap-2"><dt class="text-brand-accent font-medium shrink-0">静态页面</dt><dd>非代理路径 → <code class="px-1 py-0.5 bg-brand-hover rounded text-xs font-mono">env.ASSETS.fetch()</code> → 返回 Pages 托管的前端页面</dd></div>
+          </dl>
+          <p class="text-brand-muted text-xs">完整代码见仓库根目录的 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">_worker.js</code>，无需修改即可部署使用。</p>
         </div>
       </div>
     </div>
@@ -185,14 +160,17 @@ Root directory:    <span class="text-brand-muted">(leave empty)</span></code>
       <div class="flex items-start gap-4">
         <div class="w-10 h-10 rounded-xl bg-brand-accent flex items-center justify-center shrink-0 text-slate-900 font-bold text-lg">5</div>
         <div class="flex-1 min-w-0">
-          <h2 class="text-xl font-semibold mb-1">更新占位域名</h2>
-          <p class="text-brand-muted text-sm mb-4">将项目所有文件中的 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">your-domain.com</code> 替换为你的实际域名。</p>
+          <h2 class="text-xl font-semibold mb-1">配置你的域名</h2>
+          <p class="text-brand-muted text-sm mb-4">编辑 <code class="px-1.5 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">assets/js/config.js</code>，将 DOMAIN 改为你的实际域名。页面加载时会自动替换所有代码示例中的占位域名。</p>
           <div class="bg-[#0B1120] rounded-xl p-4 font-mono text-sm overflow-x-auto code-block relative group">
             <button class="absolute top-3 right-3 p-1.5 rounded-lg bg-brand-hover/80 hover:bg-brand-hover text-brand-muted hover:text-brand-text transition-colors duration-200 cursor-pointer opacity-0 group-hover:opacity-100 copy-btn" title="复制">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             </button>
-            <code>grep -rl <span class="text-yellow-400">'your-domain.com'</span> . | xargs sed -i <span class="text-yellow-400">'s/your-domain.com/你的域名/g'</span></code>
+            <code><span class="text-brand-accent">window</span>.CF_PROXY = {
+  <span class="text-brand-accent">DOMAIN</span>: <span class="text-yellow-400">'你的域名'</span>,
+};</code>
           </div>
+          <p class="text-brand-muted text-xs mt-3">如果需要彻底清理所有文件中的占位文本，也可以使用 <code class="px-1 py-0.5 bg-brand-hover rounded text-xs font-mono text-brand-accent">grep -rl 'your-domain.com' . | xargs sed -i 's/your-domain.com/你的域名/g'</code>。</p>
         </div>
       </div>
     </div>
