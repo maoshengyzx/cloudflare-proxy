@@ -24,7 +24,7 @@ Build command:     (leave empty)
 Output directory:  /
 ```
 
-5. 部署完成后，将代码中的 `your-domain.com` 替换为你的实际域名
+5. 编辑 `assets/js/config.js`，将 `DOMAIN` 改为你的实际域名。页面所有代码块会自动更新。
 
 ## 使用方式
 
@@ -67,6 +67,18 @@ sudo systemctl restart docker
 | `/http://...` | 通用 HTTP 代理 |
 | `/v2/...` | Docker Hub Registry API |
 | 其他 | 返回 Pages 静态页面 |
+
+## 配置
+
+所有站点配置集中在 `assets/js/config.js`：
+
+```js
+window.CF_PROXY = {
+  DOMAIN: 'your-domain.com',  // 改为你的域名
+};
+```
+
+修改后页面所有代码块中的 `your-domain.com` 会自动替换为你的域名，无需手动搜索替换。
 
 ## 技术栈
 

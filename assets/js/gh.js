@@ -1,12 +1,11 @@
 /**
  * GitHub Acceleration Page — URL Generator
  *
- * Replaces any placeholder domain with the current deployment domain.
- * Update DOMAIN or read it dynamically from location.hostname.
+ * Reads the domain from config.js, falls back to location.hostname.
  */
 
 (function () {
-  var DOMAIN = location.hostname;
+  var DOMAIN = (window.CF_PROXY && window.CF_PROXY.DOMAIN) || location.hostname;
 
   var input = document.getElementById('gh-input');
   var result = document.getElementById('gh-result');

@@ -62,9 +62,17 @@ Custom Tailwind colors (set in `tailwind.config` block on every page):
 | Accent (green) | `#22C55E` | `text-brand-accent` `bg-brand-accent` |
 | Accent hover | `#16A34A` | `bg-brand-accent-hover` |
 
-## Placeholder to replace before deploy
+## Site configuration
 
-`your-domain.com` appears in code blocks, input placeholders, and JS. Replace with the actual deployment domain. The `gh.js` URL generator reads `location.hostname` dynamically, so it auto-fills at runtime — but hardcoded strings in HTML code blocks still need manual replacement.
+Edit `assets/js/config.js` to set the domain:
+
+```js
+window.CF_PROXY = {
+  DOMAIN: 'your-domain.com',
+};
+```
+
+`main.js` reads this at page load and auto-replaces all instances of `your-domain.com` in text nodes across the page. No manual find-and-replace needed. `gh.js` also reads from config (falls back to `location.hostname`).
 
 ## Pre-delivery checks
 

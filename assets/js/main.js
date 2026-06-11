@@ -1,7 +1,32 @@
 /**
  * Cloudflare Proxy — Shared JavaScript
- * Used across all pages: copy buttons, tab switching, URL generator
+ * Used across all pages: domain replacement, copy buttons, tab switching
  */
+
+/**
+ * Replace all instances of 'your-domain.com' in text nodes and code blocks
+ * with the configured domain from config.js.
+ */
+function applyDomain() {
+  var domain = (window.CF_PROXY && window.CF_PROXY.DOMAIN) || 'your-domain.com';
+  if (domain === 'your-domain.com') return;
+
+  function replaceText(node) {
+    if (node.nodeType === 3) {
+      // Text node
+      if (node.textContent.indexOf('your-domain.com') !== -1) {
+        node.textContent = node.textContent.replace(/your-domain\.com/g, domain);
+      }
+    } else if (node.nodeType === 1) {
+      // Element node — skip <script> and <style>
+      if (node.tagName === 'SCRIPT' || node.tagName === 'STYLE') return;
+      for (var i = 0; i < node.childNodes.length; i++) {
+        replaceText(node.childNodes[i]);
+      }
+    }
+  }
+  replaceText(document.body);
+}
 
 /**
  * Tab switching utility.
@@ -54,6 +79,7 @@ function initCopyButtons() {
 
 // Auto-init on DOM ready
 document.addEventListener('DOMContentLoaded', function () {
+  applyDomain();
   initTabs();
   initCopyButtons();
 });
