@@ -36,8 +36,16 @@ Cloudflare Pages auto-detects `_worker.js` in the repo root. Routing logic:
 |---|---|
 | `OPTIONS *` | Return 204 CORS preflight |
 | `/v2/...` | Proxy to Docker Hub Registry API (`registry-1.docker.io`) |
+| `/<image>` or `/<user>/<img>` | Docker pull path → parse & proxy to registry |
+| `/<registry>/<path>` | If first segment is known registry (ghcr.io, quay.io, etc), proxy |
 | `/https://...` or `/http://...` | Strip leading `/`, proxy to target URL |
 | Everything else | `env.ASSETS.fetch(request)` — serve static file |
+
+Key features:
+- **Docker auth**: 401 → parse WWW-Authenticate → fetch token → retry with Bearer
+- **S3 redirect re-proxy**: intercepts 302/307 from AWS S3/CDN, re-proxies through Worker (critical for China access)
+- **S3 header patching**: auto-adds `x-amz-content-sha256` + `x-amz-date` for S3 requests
+- **Allowed hosts**: `ALLOWED_HOSTS` array controls which upstreams can be proxied |
 
 ### JS class contracts
 
