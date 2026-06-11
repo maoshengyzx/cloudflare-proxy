@@ -55,6 +55,26 @@
   background: radial-gradient(ellipse 600px 400px at 50% 0%, rgba(34, 197, 94, .12), transparent);
 }
 
+/* --- Scrollbar --- */
+html {
+  scrollbar-color: #334155 #0F172A;
+  scrollbar-width: thin;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
 /* --- Code blocks --- */
 .code-block code {
   white-space: pre;
