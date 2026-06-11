@@ -78,11 +78,17 @@
       GitHub Release 下载加速、Docker Hub 镜像代理 —— 基于 Cloudflare Pages，免费、高速、零门槛。
     </p>
 
-    <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in delay-300">
+    <div class="mt-10 flex flex-col items-center gap-4 animate-fade-in delay-300">
       <div class="flex items-center w-full max-w-md bg-brand-card border border-brand-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-accent/50 transition-shadow duration-200">
         <input type="text" id="hero-input" placeholder="粘贴 GitHub 仓库地址或 Docker 镜像名..." class="flex-1 bg-transparent px-4 py-3.5 text-sm font-mono text-brand-text placeholder:text-brand-muted/60 outline-none">
         <button id="hero-btn" class="px-5 py-3.5 bg-brand-accent hover:bg-brand-accent-hover text-slate-900 font-semibold text-sm transition-colors duration-200 cursor-pointer whitespace-nowrap">
           开始加速
+        </button>
+      </div>
+      <div id="hero-result" class="hidden w-full max-w-md bg-[#0B1120] border border-brand-border rounded-xl p-2 flex items-center gap-2">
+        <code id="hero-result-url" class="flex-1 px-3 py-2 font-mono text-sm text-brand-text truncate"></code>
+        <button id="hero-copy" class="shrink-0 p-2 rounded-lg hover:bg-brand-hover text-brand-muted hover:text-brand-text transition-colors duration-200 cursor-pointer" title="复制">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
       </div>
     </div>

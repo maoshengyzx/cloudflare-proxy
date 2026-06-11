@@ -78,28 +78,35 @@ function initCopyButtons() {
 }
 
 /**
- * Hero "开始加速" button logic (index.html only).
+ * Hero "开始加速" button — generate proxy URL and show it inline.
  */
 function initHeroButton() {
   var input = document.getElementById('hero-input');
   var btn = document.getElementById('hero-btn');
-  if (!input || !btn) return;
+  var result = document.getElementById('hero-result');
+  var resultUrl = document.getElementById('hero-result-url');
+  var resultCopy = document.getElementById('hero-copy');
+  if (!input || !btn || !result || !resultUrl || !resultCopy) return;
 
   btn.addEventListener('click', function () {
     var val = input.value.trim();
     if (!val) return;
 
     var domain = (window.CF_PROXY && window.CF_PROXY.DOMAIN) || location.hostname;
-
-    if (val.includes('github.com') || /^https?:\/\//.test(val)) {
-      window.open('https://' + domain + '/' + val, '_blank');
-    } else {
-      window.location.href = '/docker.html';
-    }
+    resultUrl.textContent = 'https://' + domain + '/' + val;
+    result.classList.remove('hidden');
   });
 
   input.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') btn.click();
+  });
+
+  resultCopy.addEventListener('click', function () {
+    navigator.clipboard.writeText(resultUrl.textContent).then(function () {
+      var orig = resultCopy.innerHTML;
+      resultCopy.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      setTimeout(function () { resultCopy.innerHTML = orig; }, 2000);
+    });
   });
 }
 
