@@ -76,11 +76,11 @@ Edit `assets/js/config.js` to set the domain:
 
 ```js
 window.CF_PROXY = {
-  DOMAIN: 'your-domain.com',
+  DOMAIN: 'cloudflare-proxy-6rw.pages.dev',
 };
 ```
 
-`main.js` reads this at page load and auto-replaces all instances of `your-domain.com` in text nodes across the page. No manual find-and-replace needed. `gh.js` also reads from config (falls back to `location.hostname`).
+`main.js` reads this at page load and auto-replaces all instances of `cloudflare-proxy-6rw.pages.dev` in text nodes across the page. No manual find-and-replace needed. `gh.js` also reads from config (falls back to `location.hostname`).
 
 ## Pre-delivery checks
 

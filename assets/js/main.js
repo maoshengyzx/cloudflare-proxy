@@ -4,17 +4,17 @@
  */
 
 /**
- * Replace all instances of 'your-domain.com' in text nodes and code blocks
+ * Replace all instances of 'cloudflare-proxy-6rw.pages.dev' in text nodes and code blocks
  * with the configured domain from config.js.
  */
 function applyDomain() {
-  var domain = (window.CF_PROXY && window.CF_PROXY.DOMAIN) || 'your-domain.com';
-  if (domain === 'your-domain.com') return;
+  var domain = (window.CF_PROXY && window.CF_PROXY.DOMAIN) || 'cloudflare-proxy-6rw.pages.dev';
+  if (domain === 'cloudflare-proxy-6rw.pages.dev') return;
 
   function replaceText(node) {
     if (node.nodeType === 3) {
       // Text node
-      if (node.textContent.indexOf('your-domain.com') !== -1) {
+      if (node.textContent.indexOf('cloudflare-proxy-6rw.pages.dev') !== -1) {
         node.textContent = node.textContent.replace(/your-domain\.com/g, domain);
       }
     } else if (node.nodeType === 1) {
