@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://your-domain.com/</loc>
+    <loc>https://cloudflare-proxy-6rw.pages.dev/</loc>
     <lastmod>2024-06-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://your-domain.com/gh.html</loc>
+    <loc>https://cloudflare-proxy-6rw.pages.dev/gh.html</loc>
     <lastmod>2024-06-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://your-domain.com/docker.html</loc>
+    <loc>https://cloudflare-proxy-6rw.pages.dev/docker.html</loc>
     <lastmod>2024-06-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://your-domain.com/docs.html</loc>
+    <loc>https://cloudflare-proxy-6rw.pages.dev/docs.html</loc>
     <lastmod>2024-06-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
